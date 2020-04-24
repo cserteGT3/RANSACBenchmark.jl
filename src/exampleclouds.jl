@@ -7,8 +7,8 @@ two vectors (`v1`, `v2`).
 # Arguments:
 - `vp`: a point of the plane.
 - `v1`, `v2`: two vectors that define a plane.
-- `sizet`: tuple containing the number of samples along each side.
 - `lengtht`: tuple containing the length of the plane along each side.
+- `sizet`: tuple containing the number of samples along each side.
 """
 function sampleplane(vp, v1, v2, lengtht, sizet)
     @assert size(v1) == size(v2) == size(vp) "Vector's size must be the same!"
@@ -48,11 +48,11 @@ a surface normal (`n`).
 # Arguments:
 - `vp`: a point of the plane.
 - `n`: surface normal.
-- `sizet`: tuple containing the number of samples along each side.
 - `lengtht`: tuple containing the length of the plane along each side.
+- `sizet`: tuple containing the number of samples along each side.
 """
 function sampleplane(vp, n, lengtht, sizet)
-    arbnorm = arbitrary_orthogonal(n)
+    arbnorm = arbitrary_orthogonal2(n)
     norm2 = cross(n, arbnorm)
     return sampleplane(vp, arbnorm, norm2, lengtht, sizet)
 end
@@ -77,7 +77,7 @@ function samplecylinder(ax, vp, R, h, sizet)
     @assert s1 > 1 && s2 > 1 "Should sample more than 1."
 
     axn = normalize(ax)
-    aort = normalize(arbitrary_orthogonal(axn))
+    aort = normalize(arbitrary_orthogonal2(axn))
 
     function dontMul(M, v, kit)
         if kit == 0
@@ -379,4 +379,41 @@ function examplepc6(nois = false; all = false, mrotdeg = 10, vertscale = 0.5)
     end
     nsfp_ = normalsforplot(vs, ns)
     return vs, ns, nsfp_, shape_sizes
+end
+
+## Whole new world
+
+const SV = SVector
+nSV(v...) = normalize(SVector(v...))
+
+"""
+
+"""
+function benchmarkcloud1()
+    Random.seed!(8764269842297186874)
+    vp1, np1 = sampleplane(SV(-7.31, 2.17, 1.56), nSV(0, -1, 0.0), (13.7, 9.58), (17, 21))
+    vp2, np2 = sampleplane(SV(-4.5317, 4.7, 9.2), nSV(0.5, 1, -1.0), (4.59, 3.17), (26, 12))
+    
+    cp1, cn1 = samplecylinder(nSV(0,0,1), SV(2,3.8,7.3), 17.234, 9, (37,49) )
+    cp2, cn2 = samplecylinder(nSV(2,1.3,-0.5), SV(4,16,-3.9), 1.79, 12.9, (37,17) )
+    cn2 = cn2 .* -1
+    
+    vc1, nc1 = samplesphere(SV(5.0,5,-1), 10, (72,85))
+    nc1 = nc1 .* -1
+    vc2, nc2 = samplesphere(SV(1.0,-7,8), 5, (45,57))
+    
+    vco1, nco1 = samplecone(SV(5,5.,-7.3), SV(0,0,-1.), deg2rad(20), 6.5, (22,31))
+    nco1 = nco1 .* -1
+    vco2, nco2 = samplecone(SV(15,-7, 0.5), nSV(0.5,-0.7,0.9), deg2rad(45), 9., (28,31))
+
+    vc3, nc3 = samplesphere(SV(19.8,21.7,13.4), 2, (11,9))
+    vp3, np3 = sampleplanefromcorner(SV(20.0, -10, -10), nSV(0,1,1.0), nSV(-1.0,0,0), (50,50), (25,25))
+
+
+    vpf = vcat(vp1, vp2, cp1, cp2, vc1, vc2, vco1, vco2, vc3, vp3)
+    npf = vcat(np1, np2, cn1, cn2, nc1, nc2, nco1, nco2, nc3, np3)
+
+     
+    println(size(vpf))
+    return vpf, npf
 end

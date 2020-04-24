@@ -4,21 +4,9 @@ using LinearAlgebra
 
 using RANSAC
 using StaticArrays
+using Random
 
-export  sampleplane,
-        sampleplanefromcorner,
-        samplecylinder,
-        samplesphere,
-        samplecone,
-        normalsforplot,
-        noisifyvertices,
-        noisifynormals,
-        makemeanexample,
-        examplepc2,
-        examplepc3,
-        examplepc4,
-        examplepc5,
-        examplepc6
+export  benchmarkcloud1
 
 include("exampleclouds.jl")
 
