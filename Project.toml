@@ -1,0 +1,15 @@
+name = "RANSACBenchmark"
+uuid = "37ac5fee-0dc1-428d-87ed-e8867d5d5384"
+authors = ["Tamás Cserteg <csertegt@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
+
+[compat]
+julia = "^1"

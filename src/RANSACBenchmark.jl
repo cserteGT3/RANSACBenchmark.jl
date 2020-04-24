@@ -1,0 +1,3 @@
+module RANSACBenchmark
+
+end # module
