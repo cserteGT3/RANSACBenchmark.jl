@@ -1,237 +1,4 @@
 """
-    sampleplane(vp, v1, v2, lengtht, sizet)
-
-Create a tuple of points on a plane and their normals based on a point (`vp`) and
-two vectors (`v1`, `v2`).
-
-# Arguments:
-- `vp`: a point of the plane.
-- `v1`, `v2`: two vectors that define a plane.
-- `sizet`: tuple containing the number of samples along each side.
-- `lengtht`: tuple containing the length of the plane along each side.
-"""
-function sampleplane(vp, v1, v2, lengtht, sizet)
-    @assert size(v1) == size(v2) == size(vp) "Vector's size must be the same!"
-    v1n = normalize(v1)
-    v2n = normalize(v2)
-    n = cross(v1n, v2n)
-    @assert norm(n) != 0 "Vectors can't be collinear!"
-    s1, s2 = sizet
-    @assert s1 > 0 && s2 > 0 "Should sample more than 0."
-    s1l, s2l = lengtht
-    pn = [n for i in 1:s1*s2]
-    vpn = vp - (s1l*v1n + s2l*v2n)/2
-    ps = [vpn + v1n*u/s1l + v2n*v/s2l for u in 1:s1 for v in 1:s2]
-    return (ps, pn)
-end
-
-function sampleplanefromcorner(vp, v1, v2, lengtht, sizet)
-    @assert size(v1) == size(v2) == size(vp) "Vector's size must be the same!"
-    v1n = normalize(v1)
-    v2n = normalize(v2)
-    n = cross(v1n, v2n)
-    @assert norm(n) != 0 "Vectors can't be collinear!"
-    s1, s2 = sizet
-    @assert s1 > 0 && s2 > 0 "Should sample more than 0."
-    s1l, s2l = lengtht
-    pn = [n for i in 1:(s1+1)*(s2+1)]
-    ps = [vp + v1n*s1l*u/s1 + v2n*s2l*v/s2 for u in 0:s1 for v in 0:s2]
-    return (ps, pn)
-end
-
-"""
-    sampleplane(vp, n, lengtht, sizet)
-
-Create a tuple of points on a plane and their normals based on a point (`vp`) and
-a surface normal (`n`).
-
-# Arguments:
-- `vp`: a point of the plane.
-- `n`: surface normal.
-- `sizet`: tuple containing the number of samples along each side.
-- `lengtht`: tuple containing the length of the plane along each side.
-"""
-function sampleplane(vp, n, lengtht, sizet)
-    arbnorm = arbitrary_orthogonal(n)
-    norm2 = cross(n, arbnorm)
-    return sampleplane(vp, arbnorm, norm2, lengtht, sizet)
-end
-
-"""
-    samplecylinder(ax, vp, R, h, sizet)
-
-Create a tuple of points on a cylinder and their normals based on an axis (`ax`),
-a nullpoint (`vp`), radius and height.
-
-# Arguments:
-- `ax`: axis of the cylinder.
-- `vp`: nullpoint of the cylinder.
-- `R`: radius of the cylinder.
-- `h`: height of the cylinder.
-- `sizet`: tuple containing the number of samples along the circumference and the height.
-"""
-function samplecylinder(ax, vp, R, h, sizet)
-    @assert size(ax,1) == size(vp,1) == 3 "Axis and nullpoint must be 3 dimensional."
-    @assert R > 0 && h > 0 "Can't construct a line or circle."
-    s1, s2 = sizet
-    @assert s1 > 1 && s2 > 1 "Should sample more than 1."
-
-    axn = normalize(ax)
-    aort = normalize(arbitrary_orthogonal(axn))
-
-    function dontMul(M, v, kit)
-        if kit == 0
-            return v
-        else
-            return M^(kit-1)*v
-        end
-    end
-
-    rotMat = rodriguesrad(axn, 2*π/s1)
-    ps = [vp + R.*normalize(dontMul(rotMat, aort, i)) + ((j-1)*h/(s2-1)).*axn   for i in 1:s1 for j in 1:s2]
-    ns = [normalize(p - vp - axn*dot( axn, p-vp )) for p in ps]
-    return (ps, ns)
-end
-
-"""
-    samplesphere(cp, R, sizet)
-
-Create a tuple of points on a sphere and their normals.
-
-# Arguments:
-- `cp`: centerpoint of sphere.
-- `R`: radius of the sphere.
-- `sizet`: tuple containing the number of samples along two great circles.
-"""
-function samplesphere(cp, R, sizet)
-    @assert R>0 "Can't construct sphere with radius < 0."
-    s1, s2 = sizet
-    @assert s1 > 2 && s2 > 2 "Should sample more than 2."
-    r1 = range(0, π, length = s1+2)[2:end-1]
-    r2 = range(0, 2π, length = s2+1)[1:end-1]
-    vert = [cp + R*SVector{3}([sin(i)*cos(j), sin(i)*sin(j), cos(i)]) for i in r1 for j in r2]
-    rV = SVector(0,0,R)
-    append!(vert, [cp-rV,cp+rV])
-
-    ns = similar(vert)
-    for i in eachindex(ns)
-        ns[i] = normalize(vert[i]-cp)
-    end
-    return vert, ns
-end
-
-function samplecone(ap, ax, opangr, h, sizet)
-    # s1 along ax
-    # s2 along circle
-    s1, s2 = sizet
-
-    surfl = h/cos(opangr/2)
-    axn = normalize(ax)
-    v1s = collect(range(0, stop=surfl, length=s1+1))
-    popfirst!(v1s)
-    # points along the axis
-    alongax = [axn*i for i in v1s]
-    aort = normalize(arbitrary_orthogonal2(axn))
-    ns = normalize(cross(aort, axn))
-    rM = rodriguesrad(aort, opangr/2)
-
-    # one line along the surface of the cone
-    alongsurf = [rM*s for s in alongax]
-    alongsurfn = fill!(similar(alongsurf), rM*ns)
-    rotMat = rodriguesrad(axn, 2*π/s2)
-    # translate with the apex too
-    ps = [rotMat^j*s + ap for s in alongsurf for j in 1:s2]
-    final_ns = [rotMat^j*s for s in alongsurfn for j in 1:s2]
-    return ps, final_ns
-end
-
-"""
-    normalsforplot(verts, norms, arrowsize = 0.5)
-
-Create an array of pair of points for plotting the normals with Makie.
-Only the direction of the normals is presented, their size not.
-
-# Arguments:
-- `arrowsize`: scaling factor for the size of the lines.
-"""
-function normalsforplot(verts, norms, arrowsize = 0.5)
-    @assert size(verts) == size(norms) "They should have the same size."
-    as = arrowsize
-    return [verts[i] => verts[i] + as .*normalize(norms[i]) for i in 1:length(verts) ]
-end
-
-"""
-    noisifyvertices(verts, allvs, scalef = 1)
-
-Add gaussian noise to vertices.
-Random subset or all vertices can be selected.
-
-# Arguments:
-- `allvs::Bool`: adds noise to every vertice if true.
-- `scalef::Real`: scale the noise from the [-1,1] interval.
-"""
-function noisifyvertices(verts, allvs, scalef = 1)
-    randis = similar(verts)
-    for i in eachindex(randis)
-        randis[i] = (2*scalef) .*SVector(rand(eltype(eltype(verts)),3)...) .-1
-    end
-    allvs && return verts+randis
-    bools = rand(Bool, size(verts))
-    verts[bools] += randis[bools]
-    return verts
-end
-
-"""
-    noisifyv_fixed(verts, allvs, scalef = 1)
-
-Fixed version of `noisifyvertices`.
-
-# Arguments:
-- `allvs::Bool`: adds noise to every vertice if true.
-- `scalef::Real`: scale the noise from the [-1,1] interval.
-"""
-function noisifyv_fixed(verts, allvs, scalef = 1)
-    randis = similar(verts)
-    for i in eachindex(randis)
-        randis[i] = (2*scalef) .*eltype(verts)(rand(3)) .- scalef
-    end
-    allvs && return verts+randis
-    bools = rand(Bool, size(verts))
-    verts[bools] += randis[bools]
-    return verts
-end
-
-"""
-    noisifynormals(norms, maxrot)
-
-Add gaussian noise to normals.
-Rotates the normals around a random axis with `maxrot` degrees.
-
-# Arguments:
-- `maxrot::Real`: maximum rotation in degrees.
-"""
-function noisifynormals(norms, maxrot)
-    retn = similar(norms)
-    # an array of random axes
-    randis = similar(norms)
-    for i in eachindex(randis)
-        randis[i] = SVector{3}(rand(eltype(eltype(norms)),3))
-    end
-    # random rotations: array of random numbers
-    randrots = maxrot.*rand(eltype(eltype(norms)), length(norms)).-maxrot/2
-    for i in 1:length(retn)
-        nr = normalize(randis[i])
-        while norm(normalize(cross(norms[i], nr))) < 0.1
-            nr = SVector{3}(normalize(rand(eltype(norms),3)))
-        end
-        crv = cross(nr, norms[i])
-        rM = rodriguesdeg(crv, randrots[i])
-        retn[i] = rM*norms[i]
-    end
-    return retn
-end
-
-"""
     makemeanexample(nois = false; all = false)
 
 Generate a definitely not random example.
@@ -379,4 +146,67 @@ function examplepc6(nois = false; all = false, mrotdeg = 10, vertscale = 0.5)
     end
     nsfp_ = normalsforplot(vs, ns)
     return vs, ns, nsfp_, shape_sizes
+end
+
+## Whole new world
+
+const SV = SVector
+nSV(v...) = normalize(SVector(v...))
+
+"""
+
+"""
+function benchmarkcloud1()
+    Random.seed!(8764269842297186874)
+    vp1, np1 = sampleplane(SV(-7.31, 2.17, 1.56), nSV(0, -1, 0.0), (13.7, 9.58), (17, 21))
+    vp2, np2 = sampleplane(SV(-4.5317, 4.7, 9.2), nSV(0.5, 1, -1.0), (4.59, 3.17), (26, 12))
+    fp1 = FittedPlane(SV(-7.31, 2.17, 1.56), nSV(0, -1, 0.0))
+    fp2 = FittedPlane(SV(-4.5317, 4.7, 9.2), nSV(0.5, 1, -1.0))
+    
+    cp1, cn1 = samplecylinder(nSV(0,0,1), SV(2,3.8,7.3), 17.234, 9, (37,49) )
+    cp2, cn2 = samplecylinder(nSV(2,1.3,-0.5), SV(4,16,-3.9), 1.79, 12.9, (37,17) )
+    cn2 = cn2 .* -1
+    fc1 = FittedCylinder(nSV(0,0,1), SV(2,3.8,7.3), 17.234, true)
+    fc2 = FittedCylinder(nSV(2,1.3,-0.5), SV(4,16,-3.9), 1.79, false)
+    
+    vc1, nc1 = samplesphere(SV(5.0,5,-1), 10, (72,85))
+    nc1 = nc1 .* -1
+    vc2, nc2 = samplesphere(SV(1.0,-7,8), 5, (45,57))
+    fs1 = FittedSphere(SV(5.0,5,-1), 10, false)
+    fs2 = FittedSphere(SV(1.0,-7,8), 5, true)
+    
+    vco1, nco1 = samplecone(SV(5,5.,-7.3), nSV(0,0,-1.), deg2rad(20), 6.5, (22,31))
+    nco1 = nco1 .* -1
+    vco2, nco2 = samplecone(SV(15,-7, 0.5), nSV(0.5,-0.7,0.9), deg2rad(45), 9., (28,31))
+    fco1 = FittedCone(SV(5,5.,-7.3), nSV(0,0,-1.), deg2rad(20), false)
+    fco2 = FittedCone(SV(15,-7, 0.5), nSV(0.5,-0.7,0.9), deg2rad(45), true)
+    
+    vc3, nc3 = samplesphere(SV(-19.8,75,13.4), 2, (11,9))
+    fs3 = FittedSphere(SV(-19.8,75,13.4), 2, true)
+    vp3, np3 = sampleplanefromcorner(SV(20.0, -10, -10), nSV(0,1,1.0), nSV(-1.0,0,0), (50,50), (25,25))
+    fp3 = FittedPlane(SV(20.0, -10, -10), np3[1])
+    vco3, nco3 = samplecone(SV(-5.0, 20, -45.0), nSV(0,0,1.0), deg2rad(70), 37.19, (49,57))
+    fco3 = FittedCone(SV(-5.0, 20, -45.0), nSV(0,0,1.0), deg2rad(70), true)
+    vc4, nc4 = samplesphere(SV(19.8, -40, 35), 37.865, (59,63))
+    fs4 = FittedSphere(SV(19.8, -40, 35), 37.865, true)
+    
+    cp3, cn3 = samplecylinder(nSV(-0.08,-0.06,1), SV(50., 50, -35.), 12.9, 73.5, (37,64))
+    fc3 = FittedCylinder(nSV(-0.08,-0.06,1), SV(50., 50, -35.), 12.9, true)
+    vp4, np4 = sampleplanefromcorner(SV(61.4, -73.59, -23.2), nSV(-0.2,1.0,-0.1), nSV(0,0.1,1), (124.4,92.2), (49,63))
+    np4 = np4 .* -1
+    fp4 = FittedPlane(SV(61.4, -73.59, -23.2), np4[1])
+    cp4, cn4 = samplecylinder(nSV(-1,-0.06,0.1), SV(-15.28,63.4,13.4), 6.9, 27.5, (17,23))
+    cn4 = cn4 .* -1
+    fc4 = FittedCylinder(nSV(-1,-0.06,0.1), SV(-15.28,63.4,13.4), 6.9, false)
+    
+    va = [vp1, vp2, cp1, cp2, vc1, vc2, vco1, vco2, vc3, vp3, vco3, vc4, cp3, vp4, cp4]
+    na = [np1, np2, cn1, cn2, nc1, nc2, nco1, nco2, nc3, np3, nco3, nc4, cn3, np4, cn4]
+    sh = [fp1, fp2, fc1, fc2, fs1, fs2, fco1, fco2, fs3, fp3, fco3, fs4, fc3, fp4, fc4]
+    vpf = vcat(va...)
+    npf = vcat(na...)
+    indexer = reduce(append!, [fill(i, size(va[i], 1)) for i in eachindex(va)])
+    
+     
+    return (vertices=vpf, normals=npf, version=v"1.0.1", indexes = indexer, shapes=sh, size=size(vpf, 1))
+    return vpf, npf
 end
