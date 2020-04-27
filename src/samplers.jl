@@ -230,3 +230,91 @@ function noisifynormals(norms, maxrot)
     end
     return retn
 end
+
+## new era
+
+"""
+    applynormalnoise!(normals, normalnoise::URN=nothing)
+
+Rotates the normals around a random axis with `maxrot` degrees.
+`URN = Union{Real,Nothing}`, where nothing means, that noise is not applied.
+Uses `randn()`, say normally-distributed random numbers with mean 0 and standard deviation 1.
+
+# Arguments:
+- `normals`: an array of `SVector{3}`.
+- `vertexnoise::URN=nothing`: additional noise in the form of a rotation around a random axis, with `normalnoise*randn()` degrees.
+"""
+function applynormalnoise!(normals, normalnoise::URN=nothing)
+    normalnoise === nothing && return normals
+    ftype = eltype(normals[1])
+    for i in eachindex(normals)
+        nr = normalize(SVector{3}(randn(ftype, 3)))
+        while norm(normalize(cross(normals[i], nr))) < 0.1
+            nr = normalize(SVector{3}(randn(ftype, 3)))
+        end
+        crv = cross(nr, normals[i])
+        rM = rodriguesdeg(crv, normalnoise*randn(ftype))
+        normals[i] = rM*normals[i]
+    end
+    return normals
+end
+
+"""
+    applyvertexnoise!(vertices, vertexnoise::URN=nothing)
+
+Apply gaussian noise to all vertices.
+`URN = Union{Real,Nothing}`, where nothing means, that noise is not applied.
+Uses `randn()`, say normally-distributed random numbers with mean 0 and standard deviation 1.
+
+# Arguments:
+- `vertices`: an array of `SVector{3}`.
+- `vertexnoise::URN=nothing`: additional noise in the form of `noise=vertexnoise*randn(3)`.
+"""
+function applyvertexnoise!(vertices, vertexnoise::URN=nothing)
+    vertexnoise === nothing && return vertices
+    @assert vertexnoise > 0 "Only makes sense if you scale by a positive number."
+    # apply noise to all points
+    for i in eachindex(vertices)
+        vertices[i] = vertices[i] + vertexnoise*randn(3)
+    end
+    return vertices
+end
+
+"""
+    addoutliers!(vertices, normals, indexes, outliercount::URN=nothing)
+
+Add outliers.
+`URN = Union{Real,Nothing}`, where nothing means, that noise is not applied.
+Outliers are added in the 1.2*bounding box space.
+Outliers are marked in the index array with -1.
+
+# Arguments:
+- `vertices`: an array of `SVector{3}`.
+- `normals`: an array of `SVector{3}`.
+- `indexes`: an array of indexes, that store, that given points belong to wich primitive. Outliers are marked with -1.
+- `outliercount::URN=nothing`: add plus `outliercount`% outlier points-normals to the point cloud, uniformly distributed in the 1.1*bounding box space.
+"""
+function addoutliers!(vertices, normals, indexes, outliercount::URN=nothing)
+    outliercount === nothing && return (vertices, normals, indexes)
+    @assert 0 <= outliercount <= 100 "Percent should be <= 0 <= 100."
+    s = size(vertices,1)
+    c = clamp(0, floor(Int, outliercount * s/100), s)
+    c == 0 && return (vertices, normals, indexes)
+
+    vtype = eltype(vertices)
+    ntype = eltype(normals)
+    
+    aa, bb = RANSAC.findAABB(vertices)
+    
+    extend = 0.2
+    absaabb = (1+extend) .* (bb - aa)
+    delta = aa - (extend/2)*(bb-aa)
+    
+    outlv = [vtype(rand(3) .* absaabb+delta) for i in 1:c]
+    append!(vertices, outlv)
+    outln = [normalize(ntype(2 .*rand(3) .-1)) for i in 1:c]
+    append!(normals, outln)
+    append!(indexes, fill(-1, c))
+
+    return (vertices, normals, indexes)
+end

@@ -153,10 +153,21 @@ end
 const SV = SVector
 nSV(v...) = normalize(SVector(v...))
 
-"""
+const URN = Union{Real,Nothing}
 
 """
-function benchmarkcloud1()
+    benchmarkcloud1(;vertexnoise::URN=nothing, normalnoise::URN=nothing, outliercount::URN=nothing)
+
+Create the #1 benchmarkcloud.
+All keyword arguments are: `URN = Union{Real,Nothing}`, where nothing means, that the given noise is not applied.
+Uses `randn()`, say normally-distributed random numbers with mean 0 and standard deviation 1.
+
+# Arguments:
+- `vertexnoise::URN=nothing`: additional noise in the form of `noise=vertexnoise*randn(3)`.
+- `normalnoise::URN=nothing`: rotate the normalvector by `normalnoise*randn()` degree.
+- `outliercount::URN=nothing`: add plus `outliercount`% outlier points-normals to the point cloud, uniformly distributed in the 1.1*bounding box space.
+"""
+function benchmarkcloud1(;vertexnoise::URN=nothing, normalnoise::URN=nothing, outliercount::URN=nothing)
     Random.seed!(8764269842297186874)
     vp1, np1 = sampleplane(SV(-7.31, 2.17, 1.56), nSV(0, -1, 0.0), (13.7, 9.58), (17, 21))
     vp2, np2 = sampleplane(SV(-4.5317, 4.7, 9.2), nSV(0.5, 1, -1.0), (4.59, 3.17), (26, 12))
@@ -205,8 +216,18 @@ function benchmarkcloud1()
     vpf = vcat(va...)
     npf = vcat(na...)
     indexer = reduce(append!, [fill(i, size(va[i], 1)) for i in eachindex(va)])
-    
+
+    ntp = (vertexnoise=vertexnoise, normalnoise=normalnoise, outliercount=outliercount)
+
+    vpf = applyvertexnoise!(vpf, vertexnoise)
+    npf = applynormalnoise!(npf, normalnoise)
+    vpf, npf, indexer = addoutliers!(vpf, npf, indexer, outliercount)
      
-    return (vertices=vpf, normals=npf, version=v"1.0.1", indexes = indexer, shapes=sh, size=size(vpf, 1))
+    return (vertices=vpf, normals=npf, version=v"1.1.0", indexes = indexer, shapes=sh, size=size(vpf, 1), noise=ntp)
     return vpf, npf
 end
+
+# advised values:
+# - vertexnoise < 0.5
+# - normalnoise < 10 or larger ;)
+# - outliercount ?
