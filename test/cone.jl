@@ -5,7 +5,7 @@
     h = 10.
     sizet = (10,10)
 
-    cps, cns = samplecone(apex, axis, opang, h, sizet)
+    cps, cns = RANSACBenchmark.samplecone(apex, axis, opang, h, sizet)
 
     rrr = [25, 19, 97]
     hicone = RANSAC.fit3pointcone(cps[rrr], cns[rrr])
@@ -27,4 +27,6 @@
 
     @test hcone isa FittedCone
     @test hcone2 isa FittedCone
+    @test hcone.outwards == true
+    @test hcone2.outwards == true
 end
