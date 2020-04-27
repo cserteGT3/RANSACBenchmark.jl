@@ -160,35 +160,53 @@ function benchmarkcloud1()
     Random.seed!(8764269842297186874)
     vp1, np1 = sampleplane(SV(-7.31, 2.17, 1.56), nSV(0, -1, 0.0), (13.7, 9.58), (17, 21))
     vp2, np2 = sampleplane(SV(-4.5317, 4.7, 9.2), nSV(0.5, 1, -1.0), (4.59, 3.17), (26, 12))
+    fp1 = FittedPlane(SV(-7.31, 2.17, 1.56), nSV(0, -1, 0.0))
+    fp2 = FittedPlane(SV(-4.5317, 4.7, 9.2), nSV(0.5, 1, -1.0))
     
     cp1, cn1 = samplecylinder(nSV(0,0,1), SV(2,3.8,7.3), 17.234, 9, (37,49) )
     cp2, cn2 = samplecylinder(nSV(2,1.3,-0.5), SV(4,16,-3.9), 1.79, 12.9, (37,17) )
     cn2 = cn2 .* -1
+    fc1 = FittedCylinder(nSV(0,0,1), SV(2,3.8,7.3), 17.234, true)
+    fc2 = FittedCylinder(nSV(2,1.3,-0.5), SV(4,16,-3.9), 1.79, false)
     
     vc1, nc1 = samplesphere(SV(5.0,5,-1), 10, (72,85))
     nc1 = nc1 .* -1
     vc2, nc2 = samplesphere(SV(1.0,-7,8), 5, (45,57))
+    fs1 = FittedSphere(SV(5.0,5,-1), 10, false)
+    fs2 = FittedSphere(SV(1.0,-7,8), 5, true)
     
-    vco1, nco1 = samplecone(SV(5,5.,-7.3), SV(0,0,-1.), deg2rad(20), 6.5, (22,31))
+    vco1, nco1 = samplecone(SV(5,5.,-7.3), nSV(0,0,-1.), deg2rad(20), 6.5, (22,31))
     nco1 = nco1 .* -1
     vco2, nco2 = samplecone(SV(15,-7, 0.5), nSV(0.5,-0.7,0.9), deg2rad(45), 9., (28,31))
-
+    fco1 = FittedCone(SV(5,5.,-7.3), nSV(0,0,-1.), deg2rad(20), false)
+    fco2 = FittedCone(SV(15,-7, 0.5), nSV(0.5,-0.7,0.9), deg2rad(45), true)
+    
     vc3, nc3 = samplesphere(SV(-19.8,75,13.4), 2, (11,9))
+    fs3 = FittedSphere(SV(-19.8,75,13.4), 2, true)
     vp3, np3 = sampleplanefromcorner(SV(20.0, -10, -10), nSV(0,1,1.0), nSV(-1.0,0,0), (50,50), (25,25))
-
+    fp3 = FittedPlane(SV(20.0, -10, -10), np3[1])
     vco3, nco3 = samplecone(SV(-5.0, 20, -45.0), nSV(0,0,1.0), deg2rad(70), 37.19, (49,57))
+    fco3 = FittedCone(SV(-5.0, 20, -45.0), nSV(0,0,1.0), deg2rad(70), true)
     vc4, nc4 = samplesphere(SV(19.8, -40, 35), 37.865, (59,63))
+    fs4 = FittedSphere(SV(19.8, -40, 35), 37.865, true)
+    
     cp3, cn3 = samplecylinder(nSV(-0.08,-0.06,1), SV(50., 50, -35.), 12.9, 73.5, (37,64))
+    fc3 = FittedCylinder(nSV(-0.08,-0.06,1), SV(50., 50, -35.), 12.9, true)
     vp4, np4 = sampleplanefromcorner(SV(61.4, -73.59, -23.2), nSV(-0.2,1.0,-0.1), nSV(0,0.1,1), (124.4,92.2), (49,63))
     np4 = np4 .* -1
-
+    fp4 = FittedPlane(SV(61.4, -73.59, -23.2), np4[1])
     cp4, cn4 = samplecylinder(nSV(-1,-0.06,0.1), SV(-15.28,63.4,13.4), 6.9, 27.5, (17,23))
     cn4 = cn4 .* -1
-
-    vpf = vcat(vp1, vp2, cp1, cp2, vc1, vc2, vco1, vco2, vc3, vp3, vco3, vc4, cp3, vp4, cp4)
-    npf = vcat(np1, np2, cn1, cn2, nc1, nc2, nco1, nco2, nc3, np3, nco3, nc4, cn3, np4, cn4)
-
+    fc4 = FittedCylinder(nSV(-1,-0.06,0.1), SV(-15.28,63.4,13.4), 6.9, false)
+    
+    va = [vp1, vp2, cp1, cp2, vc1, vc2, vco1, vco2, vc3, vp3, vco3, vc4, cp3, vp4, cp4]
+    na = [np1, np2, cn1, cn2, nc1, nc2, nco1, nco2, nc3, np3, nco3, nc4, cn3, np4, cn4]
+    sh = [fp1, fp2, fc1, fc2, fs1, fs2, fco1, fco2, fs3, fp3, fco3, fs4, fc3, fp4, fc4]
+    vpf = vcat(va...)
+    npf = vcat(na...)
+    indexer = reduce(append!, [fill(i, size(va[i], 1)) for i in eachindex(va)])
+    
      
-    println(size(vpf))
+    return (vertices=vpf, normals=npf, version=v"1.0.0", indexes = indexer, shapes=sh)
     return vpf, npf
 end
