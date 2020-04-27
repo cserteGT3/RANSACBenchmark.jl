@@ -10,6 +10,8 @@ notifications:
 git:
   depth: 99999999
 
+branches: master
+
 script:
   - julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/cserteGT3/RANSAC.jl"))'
   - julia -e 'using Pkg; Pkg.build(); Pkg.test()'
