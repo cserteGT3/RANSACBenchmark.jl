@@ -207,6 +207,6 @@ function benchmarkcloud1()
     indexer = reduce(append!, [fill(i, size(va[i], 1)) for i in eachindex(va)])
     
      
-    return (vertices=vpf, normals=npf, version=v"1.0.0", indexes = indexer, shapes=sh)
+    return (vertices=vpf, normals=npf, version=v"1.0.1", indexes = indexer, shapes=sh, size=size(vpf, 1))
     return vpf, npf
 end
