@@ -14,3 +14,21 @@
 -->
 
 This package supports the benchmark of the [RANSAC.jl](https://github.com/cserteGT3/RANSAC.jl) package.
+
+For quick copy-paste:
+```julia
+using RANSAC, RANSACBenchmark
+bc1 = benchmarkcloud1();
+pc = PointCloud(bc1.vertices, bc1.normals, 8);
+p = RANSACParameters(τ=100, itermax=20_000);
+@time _, extr, _ = ransac(pc, p, true; reset_rand=true);
+size(extr)
+```
+An example:
+```julia
+julia> p = RANSACParameters(τ=100, itermax=80_000);
+
+julia> @time _, extr, _ = ransac(pc, p, true; reset_rand=true); size(extr)
+1154.026951 seconds (4.25 G allocations: 187.091 GiB, 2.05% gc time)
+(13,)
+```
