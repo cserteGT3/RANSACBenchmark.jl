@@ -11,10 +11,7 @@ git:
   depth: 99999999
 
 script:
-  #- julia --project=test/ -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/cserteGT3/RANSAC.jl"))'
   - julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/cserteGT3/RANSAC.jl"))'
-  #- julia --project=test/ -e 'using Pkg; Pkg.develop(PackageSpec(path=dirname(pwd()))); Pkg.instantiate()'
-  #- julia --project=test/ --check-bounds=yes -e 'Pkg.test("$pkgname", coverage=false)'
   - julia -e 'using Pkg; Pkg.build(); Pkg.test()'
 
 jobs:
