@@ -231,7 +231,7 @@ function noisifynormals(norms, maxrot)
     return retn
 end
 
-## new era
+## Whole new world
 
 """
     applynormalnoise!(normals, normalnoise::URN=nothing)

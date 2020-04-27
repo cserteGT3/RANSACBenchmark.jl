@@ -150,11 +150,6 @@ end
 
 ## Whole new world
 
-const SV = SVector
-nSV(v...) = normalize(SVector(v...))
-
-const URN = Union{Real,Nothing}
-
 """
     benchmarkcloud1(;vertexnoise::URN=nothing, normalnoise::URN=nothing, outliercount::URN=nothing)
 
