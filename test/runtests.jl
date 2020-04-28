@@ -8,6 +8,6 @@ using StaticArrays: SVector
     include("cone.jl")
 end
 
-@testset "validate benchmark cloud 1" begin
+@testset "validate benchmark clouds" begin
     include("benchmarkcloud1.jl")
 end
