@@ -32,3 +32,12 @@ julia> @time _, extr, _ = ransac(pc, p, true; reset_rand=true); size(extr)
 1154.026951 seconds (4.25 G allocations: 187.091 GiB, 2.05% gc time)
 (13,)
 ```
+
+Another suggestion for smaller cloud (though parameters must be set):
+```julia
+using RANSAC, RANSACBenchmark
+bc2 = benchmarkcloud2([2, 4, 6, 8]);
+pc = PointCloud(bc2.vertices, bc2.normals, 2);
+p = RANSACParameters(τ=100, itermax=2000);
+@time _, extr, _ = ransac(pc, p, true; reset_rand=true);
+```

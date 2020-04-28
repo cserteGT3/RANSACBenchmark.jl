@@ -6,7 +6,8 @@ using RANSAC
 using StaticArrays
 using Random
 
-export  benchmarkcloud1
+export  benchmarkcloud1,
+        benchmarkcloud2
 
 
 # abbreviations

@@ -219,10 +219,26 @@ function benchmarkcloud1(;vertexnoise::URN=nothing, normalnoise::URN=nothing, ou
     vpf, npf, indexer = addoutliers!(vpf, npf, indexer, outliercount)
      
     return (vertices=vpf, normals=npf, version=v"1.1.0", indexes = indexer, shapes=sh, size=size(vpf, 1), noise=ntp)
-    return vpf, npf
 end
 
 # advised values:
 # - vertexnoise < 0.5
 # - normalnoise < 10 or larger ;)
 # - outliercount ?
+
+"""
+    benchmarkcloud2(sel;vertexnoise::URN=nothing, normalnoise::URN=nothing, outliercount::URN=nothing)
+
+Same as [`benchmarkcloud1`](@ref), but must choose a subset of it.
+
+# Arguments:
+- `sel`: indexes, that you want to select.
+"""
+function benchmarkcloud2(sel;vertexnoise::URN=nothing, normalnoise::URN=nothing, outliercount::URN=nothing)
+    bc = benchmarkcloud1(vertexnoise=vertexnoise, normalnoise=normalnoise, outliercount=outliercount)
+    newindexes = reduce(vcat, [findall(x->x==i, bc.indexes) for i in sel])
+    vpf = bc.vertices[newindexes]
+    npf = bc.vertices[newindexes]
+    sh = bc.shapes[sel]
+    return (vertices=vpf, normals=npf, version=bc.version, indexes = newindexes, shapes=sh, size=size(vpf, 1), noise=bc.noise)
+end
