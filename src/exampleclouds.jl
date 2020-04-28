@@ -217,8 +217,13 @@ function benchmarkcloud1(;vertexnoise::URN=nothing, normalnoise::URN=nothing, ou
     vpf = applyvertexnoise!(vpf, vertexnoise)
     npf = applynormalnoise!(npf, normalnoise)
     vpf, npf, indexer = addoutliers!(vpf, npf, indexer, outliercount)
+
+    rp = randperm(size(vpf,1))
+    vpf = vpf[rp]
+    npf = npf[rp]
+    indexer = indexer[rp]
      
-    return (vertices=vpf, normals=npf, version=v"1.1.0", indexes = indexer, shapes=sh, size=size(vpf, 1), noise=ntp)
+    return (vertices=vpf, normals=npf, version=v"1.2.0", indexes = indexer, shapes=sh, size=size(vpf, 1), noise=ntp)
 end
 
 # advised values:
