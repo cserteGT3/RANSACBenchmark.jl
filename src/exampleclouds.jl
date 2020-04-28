@@ -232,18 +232,43 @@ end
 # - outliercount ?
 
 """
-    benchmarkcloud2(sel;vertexnoise::URN=nothing, normalnoise::URN=nothing, outliercount::URN=nothing)
+    benchmarkcloud2(;vertexnoise::URN=nothing, normalnoise::URN=nothing, outliercount::URN=nothing)
 
-Same as [`benchmarkcloud1`](@ref), but must choose a subset of it.
-
-# Arguments:
-- `sel`: indexes, that you want to select.
+Same as [`benchmarkcloud1`](@ref), but only 4 of it.
 """
-function benchmarkcloud2(sel;vertexnoise::URN=nothing, normalnoise::URN=nothing, outliercount::URN=nothing)
-    bc = benchmarkcloud1(vertexnoise=vertexnoise, normalnoise=normalnoise, outliercount=outliercount)
-    newindexes = reduce(vcat, [findall(x->x==i, bc.indexes) for i in sel])
-    vpf = bc.vertices[newindexes]
-    npf = bc.vertices[newindexes]
-    sh = bc.shapes[sel]
-    return (vertices=vpf, normals=npf, version=bc.version, indexes = newindexes, shapes=sh, size=size(vpf, 1), noise=bc.noise)
+function benchmarkcloud2(;vertexnoise::URN=nothing, normalnoise::URN=nothing, outliercount::URN=nothing)
+    Random.seed!(8764269842297186874)
+    vp2, np2 = sampleplane(SV(-4.5317, 4.7, 9.2), nSV(0.5, 1, -1.0), (4.59, 3.17), (26, 12))
+    fp2 = FittedPlane(SV(-4.5317, 4.7, 9.2), nSV(0.5, 1, -1.0))
+    
+    cp2, cn2 = samplecylinder(nSV(2,1.3,-0.5), SV(4,16,-3.9), 1.79, 12.9, (37,17) )
+    cn2 = cn2 .* -1
+    fc2 = FittedCylinder(nSV(2,1.3,-0.5), SV(4,16,-3.9), 1.79, false)
+    
+    vc2, nc2 = samplesphere(SV(1.0,-7,8), 5, (45,57))
+    fs2 = FittedSphere(SV(1.0,-7,8), 5, true)
+    
+    vco2, nco2 = samplecone(SV(15,-7, 0.5), nSV(0.5,-0.7,0.9), deg2rad(45), 9., (28,31))
+    fco2 = FittedCone(SV(15,-7, 0.5), nSV(0.5,-0.7,0.9), deg2rad(45), true)
+    
+    
+    va = [vp2, cp2, vc2, vco2]
+    na = [np2, cn2, nc2, nco2]
+    sh = [fp2, fc2, fs2, fco2]
+    vpf = vcat(va...)
+    npf = vcat(na...)
+    indexer = reduce(append!, [fill(i, size(va[i], 1)) for i in eachindex(va)])
+
+    ntp = (vertexnoise=vertexnoise, normalnoise=normalnoise, outliercount=outliercount)
+
+    vpf = applyvertexnoise!(vpf, vertexnoise)
+    npf = applynormalnoise!(npf, normalnoise)
+    vpf, npf, indexer = addoutliers!(vpf, npf, indexer, outliercount)
+
+    rp = randperm(size(vpf,1))
+    vpf = vpf[rp]
+    npf = npf[rp]
+    indexer = indexer[rp]
+     
+    return (vertices=vpf, normals=npf, version=v"1.2.0", indexes = indexer, shapes=sh, size=size(vpf, 1), noise=ntp)
 end
